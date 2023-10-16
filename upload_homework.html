@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload files</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-storage.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            background-color: #f6f8fa;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #uploader {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #fileList {
+            margin-top: 30px;
+        }
+
+        #fileList a {
+            text-decoration: none;
+            color: #007BFF;
+            margin-right: 15px;
+        }
+
+        #fileList a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload files</h2>
+        <input type="file" id="fileButton" value="upload" multiple>
+        <button onclick="uploadFile()">Upload</button>
+        <progress value="0" max="100" id="uploader">0%</progress>
+
+        <div id="fileList"></div>
+    </div>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyDJMkisdEIGXTJfErTk2t_PVnSJqhpAI1Q",
+            authDomain: "cloud-for-kaif.firebaseapp.com",
+            projectId: "cloud-for-kaif",
+            storageBucket: "cloud-for-kaif.appspot.com",
+            messagingSenderId: "828183483098",
+            appId: "1:828183483098:web:01b9a0eacc059f6b808be3",
+            measurementId: "G-HD5M0DXEDH"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var storage = firebase.storage();
+
+        function uploadFile(){
+            var uploader = document.getElementById('uploader');
+            var fileButton = document.getElementById('fileButton');
+            for(var i = 0; i < fileButton.files.length; i++) {
+                var file = fileButton.files[i];
+                var storageRef = storage.ref('files/' + file.name);
+                var task = storageRef.put(file);
+
+                task.on('state_changed',
+                function progress(snapshot){
+                    var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    uploader.value = percentage;
+                },
+                function error(err){
+                    console.log('Error in uploading file: ', err);
+                },
+                function complete(){
+                    console.log('Upload completed!');
+                    displayFile(file.name, storageRef);
+                });
+            }
+        }
+
+        function displayFile(fileName, storageRef) {
+            storageRef.getDownloadURL().then(function(url) {
+                var fileList = document.getElementById('fileList');
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.innerText = fileName;
+                fileList.appendChild(a);
+                fileList.appendChild(document.createElement('br'));
+            }).catch(function(error) {
+                console.log('Error getting download URL: ', error);
+            });
+        }
+
+        function displayAllFiles() {
+            var fileList = document.getElementById('fileList');
+            var storageRef = storage.ref('files/');
+
+            // List all files in storage directory
+            storageRef.listAll().then(function(res) {
+                res.items.forEach(function(itemRef) {
+                    itemRef.getDownloadURL().then(function(url) {
+                        var a = document.createElement('a');
+                        a.href = url;
+                        a.download = itemRef.name;
+                        a.innerText = itemRef.name;
+                        fileList.appendChild(a);
+                        fileList.appendChild(document.createElement('br'));
+                    }).catch(function(error) {
+                        console.log('Error getting download URL: ', error);
+                    });
+                });
+            }).catch(function(error) {
+                console.log('Error listing files:', error);
+            });
+        }
+
+        // Call this function when the page loads
+        window.onload = displayAllFiles;
+
+    </script>
+</body>
+</html>
